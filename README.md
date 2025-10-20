@@ -211,6 +211,10 @@ emacsclient --eval "(org-roam-db-sync)"
 
 Feel free to extend this skill with additional scripts or functionality!
 
+## Acknowledgements
+
+This project was developed with [Claude Code](https://claude.ai/code), an AI-powered coding assistant.
+
 ## License
 
 This skill is provided as-is for use with Claude Code and org-roam.
