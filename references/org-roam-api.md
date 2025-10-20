@@ -69,11 +69,64 @@ Example:
 - `(org-id-uuid)` - Generate a new UUID
 - `(org-id-get-create)` - Get or create ID for current entry
 
+## Attachment Functions (org-attach)
+
+**IMPORTANT**: org-attach functions operate on the current buffer and point position. You must navigate to the node's location in the file before calling these functions.
+
+### Managing Attachments
+
+- `(org-attach-attach FILE &optional VISIT-DIR METHOD)` - Attach FILE to current entry
+  - METHOD can be `'cp` (copy), `'mv` (move), `'ln` (hard link), `'lns` (symbolic link)
+  - Default METHOD is typically `'cp` (copy)
+- `(org-attach-dir &optional CREATE-IF-NOT-EXISTS)` - Get attachment directory for current entry
+  - Returns nil if no attachment directory exists and CREATE-IF-NOT-EXISTS is nil
+- `(org-attach-file-list DIR)` - List all files in attachment directory DIR
+- `(org-attach-delete-one FILENAME)` - Delete attachment FILENAME from current entry
+- `(org-attach-delete-all)` - Delete all attachments for current entry
+- `(org-attach-open FILENAME)` - Open attachment FILENAME
+- `(org-attach-reveal)` - Open attachment directory in file manager
+
+### Example Usage
+
+```elisp
+;; Attach a file by copying it
+(org-attach-attach "/path/to/file.pdf" nil 'cp)
+
+;; Get the attachment directory
+(let ((attach-dir (org-attach-dir)))
+  (message "Attachments stored in: %s" attach-dir))
+
+;; List all attachments
+(let* ((attach-dir (org-attach-dir))
+       (files (when attach-dir (org-attach-file-list attach-dir))))
+  (message "Attached files: %s" files))
+
+;; Delete a specific attachment
+(org-attach-delete-one "file.pdf")
+```
+
+### Navigation Pattern
+
+To use org-attach with org-roam nodes programmatically:
+
+```elisp
+(let* ((node (org-roam-node-from-title-or-alias "Note Title"))
+       (file (org-roam-node-file node))
+       (node-id (org-roam-node-id node)))
+  (with-current-buffer (find-file-noselect file)
+    (goto-char (point-min))
+    (re-search-forward (format ":ID:[ \t]+%s" (regexp-quote node-id)))
+    (org-back-to-heading-or-point-min t)
+    ;; Now at the node location, can use org-attach functions
+    (org-attach-attach "/path/to/file.pdf" nil 'cp)))
+```
+
 ## Useful Variables
 
 - `org-roam-directory` - Path to org-roam directory
 - `org-roam-db-location` - Path to org-roam database file
 - `org-link-bracket-re` - Regex for matching org links
+- `org-attach-id-dir` - Directory where attachments are stored (typically `{org-roam-directory}/.attach/`)
 
 ## Sequence Functions (for filtering/mapping)
 

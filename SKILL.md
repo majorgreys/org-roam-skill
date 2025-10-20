@@ -31,6 +31,7 @@ Execute emacsclient commands directly using the Bash tool whenever needed for or
 - Search notes: Use `./scripts/search-notes.el` or direct Elisp with `org-roam-node-list` and `seq-filter`
 - Find backlinks: Load `./scripts/get-backlinks.el`, call `(get-backlinks-by-title "Note Title")`
 - Add links: Load `./scripts/insert-link.el`, call `(create-bidirectional-link "Note A" "Note B")`
+- Attach files: Load `./scripts/attach-file.el`, call `(attach-file-to-note "Note Title" "/path/to/file")`
 
 **Key principle**: Load helper scripts once per session, then use them repeatedly.
 
@@ -62,6 +63,10 @@ Common user phrases that trigger this skill:
 - "What's in my knowledge graph about..."
 - "Show me my notes about..."
 - "List all my notes on..."
+- "Attach this file to my note..."
+- "Add an attachment to..."
+- "List files attached to..."
+- "What files are attached to..."
 
 **Important**: Only activate this skill if the user has org-roam set up. If unsure, verify by checking if the Emacs daemon is running and org-roam is loaded.
 
@@ -251,6 +256,48 @@ emacsclient --eval "(delete-dups
     (mapcar #'org-roam-node-tags (org-roam-node-list))))"
 ```
 
+### 11. Attaching Files to Notes
+
+Use the `scripts/attach-file.el` helper to manage file attachments with org-attach:
+
+**Attach a file to a note (copies the file):**
+
+```bash
+cd /path/to/org-roam-skill
+emacsclient --eval "(load-file \"./scripts/attach-file.el\")"
+emacsclient --eval "(attach-file-to-note \"Note Title\" \"/path/to/file.pdf\")"
+```
+
+**List all attachments for a note:**
+
+```bash
+emacsclient --eval "(list-note-attachments \"Note Title\")"
+```
+
+**Get the full path to an attachment:**
+
+```bash
+emacsclient --eval "(get-attachment-path \"Note Title\" \"file.pdf\")"
+```
+
+**Delete an attachment:**
+
+```bash
+emacsclient --eval "(delete-note-attachment \"Note Title\" \"file.pdf\")"
+```
+
+**Get attachment directory path:**
+
+```bash
+emacsclient --eval "(get-note-attachment-dir \"Note Title\")"
+```
+
+**How it works:**
+- Uses org-mode's standard `org-attach` system
+- Files are copied to `{org-attach-id-dir}/{node-id}/filename`
+- Adds an `ATTACH` property to the note automatically
+- All functions accept either note title or node ID
+
 ## Available Helper Scripts
 
 The `scripts/` directory contains:
@@ -261,7 +308,8 @@ The `scripts/` directory contains:
 4. **get-backlinks.el**: Find backlinks and forward links between notes
 5. **insert-link.el**: Insert links programmatically
 6. **list-tags.el**: List and manage tags
-7. **utils.el**: Utility functions (check setup, get stats, find orphans)
+7. **attach-file.el**: Attach files to notes using org-attach (copy, list, delete, get paths)
+8. **utils.el**: Utility functions (check setup, get stats, find orphans)
 
 All scripts auto-detect the user's org-roam configuration and require no customization.
 

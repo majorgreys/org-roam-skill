@@ -142,6 +142,13 @@ emacsclient --eval "(create-org-roam-note \"Title\" '(\"tag1\" \"tag2\"))"
 - Use `(org-roam-node-list)` to get all nodes, then filter with `seq-filter`
 - Prefer org-roam query functions over direct SQL when possible
 
+**Attachment operations:**
+- Use `org-attach` functions which operate on the current buffer/point
+- Helper function `org-roam-skill--with-node-context` handles buffer navigation
+- Files are copied to `{org-attach-id-dir}/{node-id}/filename`
+- org-attach automatically manages the ATTACH property on nodes
+- All attachment functions accept either title or node ID
+
 **Error handling:**
 - Check if daemon is running before attempting operations
 - Verify org-roam is loaded with `(featurep 'org-roam)`
@@ -157,6 +164,7 @@ Each script in `scripts/` provides a focused function:
 - `get-backlinks.el` - Find connections between notes
 - `insert-link.el` - Programmatically insert links
 - `list-tags.el` - Tag management and listing
+- `attach-file.el` - Attach files to notes using org-attach (copy, list, delete, get paths)
 - `utils.el` - Shared utility functions
 
 Scripts should be idempotent (safe to load multiple times) and return data in easily parseable formats.
