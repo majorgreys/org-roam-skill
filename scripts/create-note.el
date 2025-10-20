@@ -88,9 +88,8 @@ Returns the file path of the created note."
 
       ;; Insert filetags if provided
       (when tags
-        (insert "#+filetags: "
-                (mapconcat (lambda (tag) (format ":%s:" tag)) tags " ")
-                "\n"))
+        (insert (format "#+filetags: :%s:\n"
+                        (mapconcat (lambda (tag) tag) tags ":"))))
 
       ;; Add blank line after frontmatter
       (insert "\n")
