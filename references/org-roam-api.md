@@ -22,6 +22,14 @@ This document provides a quick reference for commonly used org-roam functions.
 - `(org-roam-node-level NODE)` - Get node level (0 for file-level)
 - `(org-roam-node-file-mtime NODE)` - Get file modification time
 
+### Tag Constraints
+
+**Important**: Org-mode tags cannot contain hyphens (-). When creating or adding tags:
+- Invalid: `my-tag`, `web-dev`, `machine-learning`
+- Valid: `my_tag`, `web_dev`, `machine_learning`
+
+The helper scripts (`create-note.el` and `list-tags.el`) automatically sanitize tags by replacing hyphens with underscores. This ensures compatibility with org-mode's tag syntax.
+
 ## Database Functions
 
 - `(org-roam-db-sync)` - Sync the database with file system

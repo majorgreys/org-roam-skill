@@ -2,6 +2,11 @@
 
 (require 'org-roam)
 
+(defun org-roam-skill--sanitize-tag (tag)
+  "Sanitize TAG by replacing hyphens with underscores.
+Org tags cannot contain hyphens."
+  (replace-regexp-in-string "-" "_" tag))
+
 (defun list-all-tags ()
   "Get a list of all unique tags used in org-roam.
 Returns a sorted list of tag strings."
@@ -43,9 +48,11 @@ Returns a list of (id title file) tuples."
 
 (defun add-tag-to-note (title tag)
   "Add TAG to the note with TITLE.
+Sanitizes TAG by replacing hyphens with underscores (org tags cannot contain hyphens).
 Returns t if successful, nil otherwise."
   (let* ((node (org-roam-node-from-title-or-alias title))
-         (file (when node (org-roam-node-file node))))
+         (file (when node (org-roam-node-file node)))
+         (sanitized-tag (org-roam-skill--sanitize-tag tag)))
     (when (and file (file-exists-p file))
       (with-current-buffer (find-file-noselect file)
         (save-excursion
@@ -54,21 +61,23 @@ Returns t if successful, nil otherwise."
               ;; Tags line exists, append tag
               (progn
                 (end-of-line)
-                (unless (looking-back (concat ":" tag ":") nil)
-                  (insert ":" tag ":")))
+                (unless (looking-back (concat ":" sanitized-tag ":") nil)
+                  (insert ":" sanitized-tag ":")))
             ;; No tags line, create it
             (when (re-search-forward "^#\\+title:" nil t)
               (forward-line 1)
-              (insert "#+filetags: :" tag ":\n")))
+              (insert "#+filetags: :" sanitized-tag ":\n")))
           (save-buffer)
           (org-roam-db-sync)
           t)))))
 
 (defun remove-tag-from-note (title tag)
   "Remove TAG from the note with TITLE.
+Sanitizes TAG by replacing hyphens with underscores (org tags cannot contain hyphens).
 Returns t if successful, nil otherwise."
   (let* ((node (org-roam-node-from-title-or-alias title))
-         (file (when node (org-roam-node-file node))))
+         (file (when node (org-roam-node-file node)))
+         (sanitized-tag (org-roam-skill--sanitize-tag tag)))
     (when (and file (file-exists-p file))
       (with-current-buffer (find-file-noselect file)
         (save-excursion
@@ -77,7 +86,7 @@ Returns t if successful, nil otherwise."
             (let ((line-start (line-beginning-position))
                   (line-end (line-end-position)))
               (goto-char line-start)
-              (while (re-search-forward (concat ":" tag ":") line-end t)
+              (while (re-search-forward (concat ":" sanitized-tag ":") line-end t)
                 (replace-match ":" nil nil))
               (save-buffer)
               (org-roam-db-sync)

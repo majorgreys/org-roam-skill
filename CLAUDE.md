@@ -137,6 +137,12 @@ emacsclient --eval "(create-org-roam-note \"Title\" '(\"tag1\" \"tag2\"))"
 - Always use `org-roam-node-*` accessor functions, not direct property access
 - Use node IDs for linking, not file paths (IDs are stable across file moves)
 
+**Tag constraints:**
+- Org tags cannot contain hyphens (-)
+- All helper scripts automatically sanitize tags by replacing hyphens with underscores
+- Example: `my-tag` becomes `my_tag`
+- This sanitization is applied in `create-note.el` and `list-tags.el` functions
+
 **Database operations:**
 - Sync database before queries if data might be stale: `(org-roam-db-sync)`
 - Use `(org-roam-node-list)` to get all nodes, then filter with `seq-filter`

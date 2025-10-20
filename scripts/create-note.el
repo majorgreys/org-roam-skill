@@ -3,6 +3,11 @@
 (require 'org-roam)
 (require 'org-id)
 
+(defun org-roam-skill--sanitize-tag (tag)
+  "Sanitize TAG by replacing hyphens with underscores.
+Org tags cannot contain hyphens."
+  (replace-regexp-in-string "-" "_" tag))
+
 (defun org-roam-skill--get-filename-format ()
   "Extract filename format from user's org-roam capture templates.
 Returns the filename pattern from the default template, or a fallback."
@@ -86,10 +91,11 @@ Returns the file path of the created note."
       (unless (string-match-p "#\\+title:" (or head-content ""))
         (insert (format "#+title: %s\n" title)))
 
-      ;; Insert filetags if provided
+      ;; Insert filetags if provided (sanitize to remove hyphens)
       (when tags
-        (insert (format "#+filetags: :%s:\n"
-                        (mapconcat (lambda (tag) tag) tags ":"))))
+        (let ((sanitized-tags (mapcar #'org-roam-skill--sanitize-tag tags)))
+          (insert (format "#+filetags: :%s:\n"
+                          (mapconcat (lambda (tag) tag) sanitized-tags ":")))))
 
       ;; Add blank line after frontmatter
       (insert "\n")
