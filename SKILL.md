@@ -1,11 +1,34 @@
 ---
 name: Org-roam Note Management
-description: Helps users create, manage, and link org-roam notes using emacsclient to connect to a running Emacs daemon. Use this skill when the user wants to work with org-roam files, create new notes, add links between notes, search existing notes, query the org-roam database, or organize their Zettelkasten-style knowledge system.
+description: |
+  Helps users create, manage, and link org-roam notes using emacsclient to connect to a running Emacs daemon.
+
+  **ALWAYS USE THIS SKILL** when user mentions "roam note" or "org-roam", references file paths containing `/roam/` or `/org-roam/`, or wants to create/search/link notes in their roam directory.
+
+  Use this skill for: creating roam notes, searching notes, adding backlinks, querying org-roam database, managing Zettelkasten-style knowledge systems.
+
+  **NEVER use Read/Write/Edit tools directly on roam notes** - they bypass database sync and break org-roam functionality.
 ---
 
 # Org-roam Note Management Skill
 
 > **Note**: This is a Claude Code Agent Skill. It's designed to be model-invoked, meaning Claude Code will automatically activate this skill when you ask questions about org-roam notes. You don't need to manually invoke it - just ask naturally about your notes!
+
+## ⚠️ CRITICAL: NEVER Use Direct File Tools for Roam Notes
+
+**ALWAYS invoke this skill instead of using Read/Write/Edit tools directly** when:
+- User mentions "roam note" or "org-roam note" (with or without "org-" prefix)
+- File paths contain `/roam/`, `/org-roam/`, or `org-roam` directory patterns
+- User wants to create, modify, or query notes in their roam directory
+- User references existing roam notes by path (e.g., `~/Documents/org/roam/20251020203000.org`)
+
+**Why this matters:**
+- Roam notes require proper org-roam database updates
+- IDs must be generated with microseconds precision using emacsclient
+- File creation must respect user's org-roam-capture-templates
+- Direct file operations bypass database sync and break backlinks
+
+**If you catch yourself about to use Write/Edit/Read on a roam note: STOP and invoke this skill first.**
 
 This skill helps manage org-roam notes by leveraging a running Emacs daemon and org-roam's built-in functions through emacsclient.
 
@@ -37,32 +60,58 @@ Execute emacsclient commands directly using the Bash tool whenever needed for or
 
 ## When to Use This Skill
 
-Use this skill when the user mentions:
-- **org-roam** explicitly in their request
-- Creating/managing **notes** or **Zettelkasten**
-- **Knowledge graphs** or **PKM** (Personal Knowledge Management)
-- **Backlinks**, **bidirectional links**, or note connections
-- Searching their **note database** or **roam directory**
-- **Capturing insights**, ideas, or thoughts to notes
-- **Second brain** or permanent notes
+**HIGH PRIORITY TRIGGERS** - Invoke this skill immediately when:
 
-Common user phrases that trigger this skill:
-- "Create a note about..."
-- "Add a note about..."
+### Explicit Keywords (case-insensitive)
+- User says "**roam note**" or "**org-roam**" (with or without "org-" prefix)
+- User mentions "**roam directory**" or "**org-roam directory**"
+- User references "**Zettelkasten**", "**knowledge graph**", "**PKM**", or "**second brain**"
+
+### File Path Patterns
+- Any path containing `/roam/`, `/org-roam/`, or `org-roam` directory segments
+- User provides specific roam note paths (e.g., `~/Documents/org/roam/20251020203000.org`)
+- Files with timestamp-based names in a roam directory (e.g., `20251020203000.org`)
+
+### Operation Patterns
+- Creating/managing notes (when in context of roam)
+- **Backlinks**, **bidirectional links**, or connecting notes
+- Searching **note database** or querying notes
+- **Capturing insights**, ideas, or thoughts to notes
+- **Saving implementation plans** or work journals to notes
+
+### Common User Phrases
+
+**Creating notes:**
+- "Start a roam note..."
+- "Begin a roam note..."
+- "Make a roam note..."
+- "Create a [roam] note about..."
+- "Add a [roam] note about..."
+- "New roam note for..."
+
+**Capturing content:**
 - "Remember this insight..."
 - "Capture this idea..."
 - "Save this to my notes..."
 - "Take a note on..."
+- "Record this in roam..."
+
+**Searching:**
 - "Search my notes for..."
 - "Search my org-roam notes for..."
+- "Find notes about..."
+- "Show me my notes about..."
+- "List all my notes on..."
+
+**Linking:**
 - "What notes link to..."
 - "Show me all notes tagged with..."
 - "Link these two notes together"
 - "Connect [note A] to [note B]"
 - "Find orphaned notes"
 - "What's in my knowledge graph about..."
-- "Show me my notes about..."
-- "List all my notes on..."
+
+**Attachments:**
 - "Attach this file to my note..."
 - "Add an attachment to..."
 - "List files attached to..."
