@@ -1,9 +1,21 @@
-;;; doctor.el --- Diagnostic script for org-roam setup
+;;; org-roam-skill-doctor.el --- Diagnostic functions -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2025
+
+;; Author: Tahir Butt
+;; Keywords: outlines convenience
+
+;;; Commentary:
+;; Diagnostic functions for checking org-roam setup and configuration.
+
+;;; Code:
 
 (require 'org-roam)
+(require 'org-id)
 
+;;;###autoload
 (defun org-roam-doctor ()
-  "Run diagnostic checks on org-roam setup.
+  "Run diagnostic check on org-roam setup.
 Returns a detailed report of the configuration status."
   (let ((checks '())
         (errors '())
@@ -162,6 +174,7 @@ Returns a detailed report of the configuration status."
 
       (buffer-string))))
 
+;;;###autoload
 (defun org-roam-doctor-and-print ()
   "Run org-roam diagnostic and print the report.
 Use this function when calling from emacsclient."
@@ -169,8 +182,9 @@ Use this function when calling from emacsclient."
     (message "%s" report)
     report))
 
+;;;###autoload
 (defun org-roam-doctor-quick ()
-  "Quick diagnostic check - returns t if setup is OK, nil otherwise.
+  "Quick diagnostic check - return t if setup is OK, nil otherwise.
 Returns a simple pass/fail status."
   (and (featurep 'org-roam)
        (boundp 'org-roam-directory)
@@ -181,5 +195,5 @@ Returns a simple pass/fail status."
            (progn (org-roam-node-list) t)
          (error nil))))
 
-(provide 'doctor)
-;;; doctor.el ends here
+(provide 'org-roam-skill-doctor)
+;;; org-roam-skill-doctor.el ends here

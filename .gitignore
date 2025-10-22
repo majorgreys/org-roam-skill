@@ -6,6 +6,9 @@ auto-save-list
 tramp
 .\#*
 
+# Eldev
+.eldev/
+
 # OS files
 .DS_Store
 .DS_Store?

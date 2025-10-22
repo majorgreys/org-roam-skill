@@ -1,10 +1,22 @@
-;;; utils.el --- Utility functions for org-roam skill
+;;; org-roam-skill-utils.el --- Utility functions -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2025
+
+;; Author: Tahir Butt
+;; Keywords: outlines convenience
+
+;;; Commentary:
+;; Utility functions for org-roam-skill including orphan detection and stats.
+
+;;; Code:
 
 (require 'org-roam)
+(require 'seq)
 
-(defun check-org-roam-setup ()
+;;;###autoload
+(defun org-roam-skill-check-setup ()
   "Check if org-roam is properly set up.
-Returns a plist with status information."
+Return a plist with status information."
   (list :org-roam-loaded (featurep 'org-roam)
         :directory org-roam-directory
         :directory-exists (file-exists-p org-roam-directory)
@@ -12,25 +24,28 @@ Returns a plist with status information."
         :database-exists (file-exists-p org-roam-db-location)
         :node-count (length (org-roam-node-list))))
 
-(defun get-note-info (title)
+;;;###autoload
+(defun org-roam-skill-get-note-info (title)
   "Get comprehensive information about a note by TITLE.
-Returns a formatted string with all note details."
+Return a formatted string with all note details."
   (let ((node (org-roam-node-from-title-or-alias title)))
     (if node
-        (format "Title: %s\nID: %s\nFile: %s\nTags: %s\nAliases: %s\nRefs: %s\nBacklinks: %d\nLevel: %d"
-                (org-roam-node-title node)
-                (org-roam-node-id node)
-                (org-roam-node-file node)
-                (or (org-roam-node-tags node) "none")
-                (or (org-roam-node-aliases node) "none")
-                (or (org-roam-node-refs node) "none")
-                (length (org-roam-backlinks-get node))
-                (org-roam-node-level node))
+        (format
+         "Title: %s\nID: %s\nFile: %s\nTags: %s\nAliases: %s\nRefs: %s\nBacklinks: %d\nLevel: %d"
+         (org-roam-node-title node)
+         (org-roam-node-id node)
+         (org-roam-node-file node)
+         (or (org-roam-node-tags node) "none")
+         (or (org-roam-node-aliases node) "none")
+         (or (org-roam-node-refs node) "none")
+         (length (org-roam-backlinks-get node))
+         (org-roam-node-level node))
       "Note not found")))
 
-(defun list-recent-notes (n)
+;;;###autoload
+(defun org-roam-skill-list-recent-notes (n)
   "List the N most recently modified notes.
-Returns a list of (id title file mtime) tuples."
+Return a list of (id title file mtime) tuples."
   (mapcar
    (lambda (node)
      (list (org-roam-node-id node)
@@ -45,9 +60,10 @@ Returns a list of (id title file mtime) tuples."
      (org-roam-node-list))
     n)))
 
-(defun find-orphan-notes ()
+;;;###autoload
+(defun org-roam-skill-find-orphan-notes ()
   "Find notes that have no backlinks and no forward links.
-Returns a list of (id title file) tuples for orphaned notes."
+Return a list of (id title file) tuples for orphaned notes."
   (seq-filter
    (lambda (node-info)
      (let* ((node (org-roam-node-from-id (car node-info)))
@@ -70,13 +86,19 @@ Returns a list of (id title file) tuples for orphaned notes."
             (org-roam-node-file node)))
     (org-roam-node-list))))
 
-(defun get-graph-stats ()
+;;;###autoload
+(defun org-roam-skill-get-graph-stats ()
   "Get statistics about the org-roam graph.
-Returns a plist with various statistics."
+Return a plist with various statistics."
   (let* ((nodes (org-roam-node-list))
          (total-nodes (length nodes))
          (total-links 0)
-         (tags (list-all-tags)))
+         ;; Forward declare to avoid dependency on org-roam-skill-tags
+         (tags (sort
+                (delete-dups
+                 (flatten-list
+                  (mapcar #'org-roam-node-tags nodes)))
+                #'string<)))
     (dolist (node nodes)
       (setq total-links (+ total-links (length (org-roam-backlinks-get node)))))
     (list :total-notes total-nodes
@@ -86,5 +108,5 @@ Returns a plist with various statistics."
                                       (/ (float total-links) total-nodes)
                                     0))))
 
-(provide 'utils)
-;;; utils.el ends here
+(provide 'org-roam-skill-utils)
+;;; org-roam-skill-utils.el ends here

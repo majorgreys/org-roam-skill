@@ -1,24 +1,33 @@
-;;; list-tags.el --- List and manage tags in org-roam
+;;; org-roam-skill-tags.el --- Tag management functions -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2025
+
+;; Author: Tahir Butt
+;; Keywords: outlines convenience
+
+;;; Commentary:
+;; Functions for managing tags in org-roam notes.
+
+;;; Code:
 
 (require 'org-roam)
+(require 'org-roam-skill-core)
+(require 'seq)
 
-(defun org-roam-skill--sanitize-tag (tag)
-  "Sanitize TAG by replacing hyphens with underscores.
-Org tags cannot contain hyphens."
-  (replace-regexp-in-string "-" "_" tag))
-
-(defun list-all-tags ()
+;;;###autoload
+(defun org-roam-skill-list-all-tags ()
   "Get a list of all unique tags used in org-roam.
-Returns a sorted list of tag strings."
+Return a sorted list of tag strings."
   (sort
    (delete-dups
     (flatten-list
      (mapcar #'org-roam-node-tags (org-roam-node-list))))
    #'string<))
 
-(defun count-notes-by-tag ()
+;;;###autoload
+(defun org-roam-skill-count-notes-by-tag ()
   "Count how many notes use each tag.
-Returns an alist of (tag . count) pairs sorted by count descending."
+Return an alist of (tag . count) pairs sorted by count descending."
   (let ((tag-counts (make-hash-table :test 'equal)))
     ;; Count occurrences
     (dolist (node (org-roam-node-list))
@@ -33,9 +42,10 @@ Returns an alist of (tag . count) pairs sorted by count descending."
        result)
      (lambda (a b) (> (cdr a) (cdr b))))))
 
-(defun get-notes-without-tags ()
+;;;###autoload
+(defun org-roam-skill-get-notes-without-tags ()
   "Get all notes that have no tags.
-Returns a list of (id title file) tuples."
+Return a list of (id title file) tuples."
   (mapcar
    (lambda (node)
      (list (org-roam-node-id node)
@@ -46,10 +56,11 @@ Returns a list of (id title file) tuples."
       (null (org-roam-node-tags node)))
     (org-roam-node-list))))
 
-(defun add-tag-to-note (title tag)
+;;;###autoload
+(defun org-roam-skill-add-tag (title tag)
   "Add TAG to the note with TITLE.
-Sanitizes TAG by replacing hyphens with underscores (org tags cannot contain hyphens).
-Returns t if successful, nil otherwise."
+Sanitize TAG by replacing hyphens with underscores.
+Return t if successful, nil otherwise."
   (let* ((node (org-roam-node-from-title-or-alias title))
          (file (when node (org-roam-node-file node)))
          (sanitized-tag (org-roam-skill--sanitize-tag tag)))
@@ -71,10 +82,11 @@ Returns t if successful, nil otherwise."
           (org-roam-db-sync)
           t)))))
 
-(defun remove-tag-from-note (title tag)
+;;;###autoload
+(defun org-roam-skill-remove-tag (title tag)
   "Remove TAG from the note with TITLE.
-Sanitizes TAG by replacing hyphens with underscores (org tags cannot contain hyphens).
-Returns t if successful, nil otherwise."
+Sanitize TAG by replacing hyphens with underscores.
+Return t if successful, nil otherwise."
   (let* ((node (org-roam-node-from-title-or-alias title))
          (file (when node (org-roam-node-file node)))
          (sanitized-tag (org-roam-skill--sanitize-tag tag)))
@@ -86,11 +98,12 @@ Returns t if successful, nil otherwise."
             (let ((line-start (line-beginning-position))
                   (line-end (line-end-position)))
               (goto-char line-start)
-              (while (re-search-forward (concat ":" sanitized-tag ":") line-end t)
+              (while (re-search-forward
+                      (concat ":" sanitized-tag ":") line-end t)
                 (replace-match ":" nil nil))
               (save-buffer)
               (org-roam-db-sync)
               t)))))))
 
-(provide 'list-tags)
-;;; list-tags.el ends here
+(provide 'org-roam-skill-tags)
+;;; org-roam-skill-tags.el ends here

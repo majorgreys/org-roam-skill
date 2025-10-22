@@ -12,7 +12,8 @@ This skill uses emacsclient to communicate with a running Emacs daemon, avoiding
 
 **Key components:**
 - `SKILL.md` - Main skill instructions that define when and how Claude Code should use this skill
-- `scripts/*.el` - Reusable Emacs Lisp helper functions for common org-roam operations
+- `org-roam-skill.el` - Main Emacs package with all helper functions (loads once at Emacs startup)
+- `scripts/*.el` - Legacy helper scripts (deprecated, kept for backward compatibility)
 - `references/` - API documentation for org-roam functions and emacsclient usage patterns
 
 ## Prerequisites for Users
@@ -22,8 +23,25 @@ The user must have:
 2. org-roam installed and configured
 3. org-roam directory set up (typically `~/org-roam/` or `~/Documents/org/roam/`)
 4. org-roam database initialized
+5. **org-roam-skill package loaded in Emacs configuration**
 
 **This skill works with any org-roam configuration.** No special customization required!
+
+### Loading the Package
+
+**For Doom Emacs** (add to `config.el`):
+```elisp
+(use-package! org-roam-skill
+  :load-path "~/.claude/skills/org-roam-skill")
+```
+
+**For vanilla Emacs** (add to `init.el`):
+```elisp
+(add-to-list 'load-path "~/.claude/skills/org-roam-skill")
+(require 'org-roam-skill)
+```
+
+After adding, restart Emacs or eval the config.
 
 ### How It Works
 
@@ -62,14 +80,18 @@ For optimal programmatic access, users can optionally configure timestamp-only f
 
 ## Testing/Verification Commands
 
+**Verify org-roam-skill is loaded:**
+```bash
+emacsclient --eval "(featurep 'org-roam-skill)"
+```
+Should return `t`. If `nil`, user needs to add package to their Emacs config.
+
 **Run comprehensive diagnostics (recommended):**
 ```bash
-# Ask user for the org-roam-skill directory path, then use it:
-emacsclient --eval "(load-file \"/path/to/org-roam-skill/scripts/doctor.el\")"
-emacsclient --eval "(princ (org-roam-doctor))"
+emacsclient --eval "(org-roam-doctor)"
 ```
 
-The doctor script checks:
+The doctor function checks:
 - org-roam is loaded and configured
 - Directory exists and is writable
 - Database exists and is accessible
@@ -113,16 +135,12 @@ emacsclient --eval "(org-roam-db-sync)"
 
 ## Core Pattern
 
-All operations follow this pattern:
+All operations use direct function calls (no loading required):
 ```bash
-emacsclient --eval "(progn (require 'org-roam) YOUR-CODE-HERE)"
-```
-
-Helper scripts are loaded once and called multiple times:
-```bash
-emacsclient --eval "(load-file \"./scripts/create-note.el\")"
 emacsclient --eval "(create-org-roam-note \"Title\" '(\"tag1\" \"tag2\"))"
 ```
+
+Functions are already in memory after `org-roam-skill` is loaded in the user's Emacs config.
 
 ## Important Implementation Details
 
@@ -161,21 +179,21 @@ emacsclient --eval "(create-org-roam-note \"Title\" '(\"tag1\" \"tag2\"))"
 - Handle nil returns when nodes don't exist
 - Check database file exists: `(file-exists-p org-roam-db-location)`
 
-## Helper Scripts Structure
+## Function Organization
 
-Each script in `scripts/` provides a focused function:
-- `doctor.el` - Diagnostic script to verify org-roam setup and configuration
-- `create-note.el` - Create new notes with tags programmatically
-- `search-notes.el` - Query notes by title/content
-- `get-backlinks.el` - Find connections between notes
-- `insert-link.el` - Programmatically insert links
-- `list-tags.el` - Tag management and listing
-- `attach-file.el` - Attach files to notes using org-attach (copy, list, delete, get paths)
-- `utils.el` - Shared utility functions
+All functions are in `org-roam-skill.el` grouped by purpose:
+- **Note Creation**: `create-org-roam-note`, `create-org-roam-note-with-content`
+- **Search**: `search-notes-by-title`, `search-notes-by-tag`, `search-notes-by-content`, `get-node-by-title`
+- **Backlinks**: `get-backlinks-by-title`, `get-backlinks-by-id`, `get-forward-links-by-title`, `get-all-connections-by-title`
+- **Link Insertion**: `insert-link-to-note`, `insert-link-in-note-by-title`, `create-bidirectional-link`, `insert-multiple-links`
+- **Tag Management**: `list-all-tags`, `count-notes-by-tag`, `get-notes-without-tags`, `add-tag-to-note`, `remove-tag-from-note`
+- **Attachments**: `attach-file-to-note`, `list-note-attachments`, `delete-note-attachment`, `get-attachment-path`, `get-note-attachment-dir`
+- **Utilities**: `check-org-roam-setup`, `get-note-info`, `list-recent-notes`, `find-orphan-notes`, `get-graph-stats`
+- **Diagnostics**: `org-roam-doctor`, `org-roam-doctor-and-print`, `org-roam-doctor-quick`
 
-Scripts should be idempotent (safe to load multiple times) and return data in easily parseable formats.
+All autoloaded functions are marked with `;;;###autoload` for easier package management.
 
-**Important about create-note.el**: This script creates files directly with the proper org-roam structure (PROPERTIES block, ID, title, filetags). This is the recommended approach for programmatic note creation, as `org-roam-capture-` is designed for interactive use. The script:
+**Important about create-org-roam-note**: This function creates files directly with the proper org-roam structure (PROPERTIES block, ID, title, filetags). This is the recommended approach for programmatic note creation, as `org-roam-capture-` is designed for interactive use. The function:
 1. **Auto-detects filename format** from user's `org-roam-capture-templates`
 2. **Expands template placeholders** like `${slug}`, `${title}`, `%<time-format>`
 3. Creates UUID using `org-id-uuid` (standard org-mode function)
@@ -184,9 +202,13 @@ Scripts should be idempotent (safe to load multiple times) and return data in ea
 6. Syncs the database using `org-roam-db-sync` to register the new note
 7. Returns the file path
 
-**Key feature**: The script adapts to the user's configuration automatically - no customization needed. It works with:
+**Key feature**: The function adapts to the user's configuration automatically - no customization needed. It works with:
 - Default org-roam templates (timestamp-slug format)
 - Timestamp-only templates
 - Custom templates with any valid placeholders
 
 This approach is safe and follows org-roam's internal structure without bypassing any important validation.
+
+## Legacy Scripts (Deprecated)
+
+The `scripts/` directory contains individual `.el` files that are now deprecated. All functionality has been consolidated into `org-roam-skill.el`. The scripts are kept for backward compatibility but should not be used for new implementations.
