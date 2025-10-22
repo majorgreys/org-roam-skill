@@ -69,5 +69,53 @@
         (when (file-exists-p org-roam-directory)
           (delete-directory org-roam-directory t))))))
 
+;;; Formatting Tests
+
+(describe "org-roam-skill--format-buffer"
+  (it "aligns tables in org buffer with proper pipe alignment"
+    (with-temp-buffer
+      (org-mode)
+      (insert "| Name | Value |\n")
+      (insert "| Foo | Bar |\n")
+      (insert "| LongName | ShortVal |\n")
+      (org-roam-skill--format-buffer)
+      (goto-char (point-min))
+      (expect (org-at-table-p) :to-be t)
+      ;; Check that pipes are aligned
+      (let ((output (substring-no-properties (buffer-string))))
+        (expect output :to-equal "| Name     | Value    |\n| Foo      | Bar      |\n| LongName | ShortVal |\n")))))
+
+(describe "format-org-roam-note"
+  (it "formats an org-roam note file with aligned table pipes"
+    (let* ((org-roam-directory (make-temp-file "org-roam-test-" t))
+           (org-roam-db-location (expand-file-name "org-roam.db" org-roam-directory))
+           (test-id (org-id-uuid))
+           (test-file (expand-file-name "test-note.org" org-roam-directory)))
+      (unwind-protect
+          (progn
+            ;; Create a test note with an unaligned table
+            (with-temp-file test-file
+              (insert ":PROPERTIES:\n")
+              (insert (format ":ID:       %s\n" test-id))
+              (insert ":END:\n")
+              (insert "#+title: Test Note\n\n")
+              (insert "| Name | Value |\n")
+              (insert "| Foo | Bar |\n")
+              (insert "| LongName | ShortVal |\n"))
+            (org-roam-db-sync)
+            ;; Format the note
+            (expect (format-org-roam-note test-id) :to-be t)
+            ;; Verify file was formatted with aligned pipes
+            (with-temp-buffer
+              (insert-file-contents test-file)
+              (let ((content (buffer-string)))
+                (expect content :to-match "| Name")
+                ;; Verify pipes are aligned (all rows have same pipe positions)
+                (expect content :to-match "| Name     | Value    |")
+                (expect content :to-match "| Foo      | Bar      |")
+                (expect content :to-match "| LongName | ShortVal |"))))
+        (when (file-exists-p org-roam-directory)
+          (delete-directory org-roam-directory t))))))
+
 (provide 'org-roam-skill-test)
 ;;; org-roam-skill-test.el ends here
