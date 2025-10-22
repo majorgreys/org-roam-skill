@@ -26,6 +26,9 @@ Copy the file using org-attach.  Return the attachment directory path."
    (lambda (node)
      ;; Attach the file using org-attach
      (org-attach-attach file-path nil 'cp)
+     ;; Format the buffer after attaching (org-attach modifies PROPERTIES)
+     (org-roam-skill--format-buffer)
+     (save-buffer)
      ;; Return info about the attachment
      (let ((attach-dir (org-attach-dir))
            (filename (file-name-nondirectory file-path)))
@@ -69,6 +72,9 @@ Return t on success, nil if attachment doesn't exist."
        (if (member filename attachments)
            (progn
              (org-attach-delete-one filename)
+             ;; Format the buffer after deleting (may modify PROPERTIES)
+             (org-roam-skill--format-buffer)
+             (save-buffer)
              t)
          (error "Attachment not found: %s" filename))))))
 

@@ -179,6 +179,12 @@ Functions are already in memory after `org-roam-skill` is loaded in the user's E
 - Handle nil returns when nodes don't exist
 - Check database file exists: `(file-exists-p org-roam-db-location)`
 
+**Formatting:**
+- All file-modifying operations automatically format the buffer after changes
+- Formatting includes table alignment and structure cleanup
+- Uses `org-roam-skill--format-buffer` which calls `org-table-align` on all tables
+- Manual formatting available via `format-org-roam-note` function
+
 ## Function Organization
 
 All functions are in `org-roam-skill.el` grouped by purpose:
@@ -188,7 +194,7 @@ All functions are in `org-roam-skill.el` grouped by purpose:
 - **Link Insertion**: `insert-link-to-note`, `insert-link-in-note-by-title`, `create-bidirectional-link`, `insert-multiple-links`
 - **Tag Management**: `list-all-tags`, `count-notes-by-tag`, `get-notes-without-tags`, `add-tag-to-note`, `remove-tag-from-note`
 - **Attachments**: `attach-file-to-note`, `list-note-attachments`, `delete-note-attachment`, `get-attachment-path`, `get-note-attachment-dir`
-- **Utilities**: `check-org-roam-setup`, `get-note-info`, `list-recent-notes`, `find-orphan-notes`, `get-graph-stats`
+- **Utilities**: `check-org-roam-setup`, `get-note-info`, `list-recent-notes`, `find-orphan-notes`, `get-graph-stats`, `format-org-roam-note`
 - **Diagnostics**: `org-roam-doctor`, `org-roam-doctor-and-print`, `org-roam-doctor-quick`
 
 All autoloaded functions are marked with `;;;###autoload` for easier package management.
