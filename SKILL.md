@@ -53,13 +53,13 @@ emacsclient --eval "(featurep 'org-roam-skill)"
 
 If not loaded, ask user to add to their Emacs config (see installation instructions below).
 
-**Most common operations** (all functions are already in memory):
+**Most common operations** (all functions are already in memory with `org-roam-skill-` prefix):
 - Verify setup: `emacsclient --eval "(org-roam-doctor)"`
-- Create note: `emacsclient --eval "(create-org-roam-note \"Title\" '(\"tag\") \"content\")"`
-- Search notes: `emacsclient --eval "(search-notes-by-title \"search-term\")"`
-- Find backlinks: `emacsclient --eval "(get-backlinks-by-title \"Note Title\")"`
-- Add links: `emacsclient --eval "(create-bidirectional-link \"Note A\" \"Note B\")"`
-- Attach files: `emacsclient --eval "(attach-file-to-note \"Note Title\" \"/path/to/file\")"`
+- Create note: `emacsclient --eval "(org-roam-skill-create-note \"Title\" '(\"tag\") \"content\")"`
+- Search notes: `emacsclient --eval "(org-roam-skill-search-by-title \"search-term\")"`
+- Find backlinks: `emacsclient --eval "(org-roam-skill-get-backlinks-by-title \"Note Title\")"`
+- Add links: `emacsclient --eval "(org-roam-skill-create-bidirectional-link \"Note A\" \"Note B\")"`
+- Attach files: `emacsclient --eval "(org-roam-skill-attach-file \"Note Title\" \"/path/to/file\")"`
 
 **Key principle**: Functions are loaded once at Emacs startup - no repeated loading overhead.
 
@@ -217,10 +217,10 @@ emacsclient --eval "(org-roam-db-sync)"
 
 ### 3. Creating a New Note
 
-Use the `create-org-roam-note` function (auto-detects user's template):
+Use the `org-roam-skill-create-note` function (auto-detects user's template):
 
 ```bash
-emacsclient --eval "(create-org-roam-note \"Note Title\" '(\"tag1\" \"tag2\") \"Optional content here\")"
+emacsclient --eval "(org-roam-skill-create-note \"Note Title\" '(\"tag1\" \"tag2\") \"Optional content here\")"
 ```
 
 The function automatically:
@@ -233,20 +233,20 @@ The function automatically:
 
 ### 4. Searching Notes by Title
 
-Use the `search-notes-by-title` function:
+Use the `org-roam-skill-search-by-title` function:
 
 ```bash
-emacsclient --eval "(search-notes-by-title \"search-term\")"
+emacsclient --eval "(org-roam-skill-search-by-title \"search-term\")"
 ```
 
 Returns a list of (id title file) tuples.
 
 ### 5. Finding Backlinks
 
-Use the `get-backlinks-by-title` function:
+Use the `org-roam-skill-get-backlinks-by-title` function:
 
 ```bash
-emacsclient --eval "(get-backlinks-by-title \"Note Title\")"
+emacsclient --eval "(org-roam-skill-get-backlinks-by-title \"Note Title\")"
 ```
 
 Returns a list of (id title file) tuples for notes linking to this note.
@@ -310,10 +310,10 @@ emacsclient --eval "(let ((target-node (org-roam-node-from-title-or-alias \"Targ
 
 ### 10. Getting All Tags
 
-Use the `list-all-tags` function:
+Use the `org-roam-skill-list-all-tags` function:
 
 ```bash
-emacsclient --eval "(list-all-tags)"
+emacsclient --eval "(org-roam-skill-list-all-tags)"
 ```
 
 Returns a sorted list of all unique tags.
@@ -325,13 +325,13 @@ Use the attachment functions to manage file attachments with org-attach:
 **Attach a file to a note (copies the file):**
 
 ```bash
-emacsclient --eval "(attach-file-to-note \"Note Title\" \"/path/to/file.pdf\")"
+emacsclient --eval "(org-roam-skill-attach-file \"Note Title\" \"/path/to/file.pdf\")"
 ```
 
 **List all attachments for a note:**
 
 ```bash
-emacsclient --eval "(list-note-attachments \"Note Title\")"
+emacsclient --eval "(org-roam-skill-list-attachments \"Note Title\")"
 ```
 
 **Get the full path to an attachment:**
@@ -360,16 +360,16 @@ emacsclient --eval "(get-note-attachment-dir \"Note Title\")"
 
 ## Available Functions
 
-All functions from `org-roam-skill.el` are available once the package is loaded:
+All functions from `org-roam-skill.el` are available once the package is loaded (all use `org-roam-skill-` prefix):
 
 1. **org-roam-doctor**: Diagnostic function to verify org-roam setup and configuration
-2. **create-org-roam-note**: Create new org-roam notes (auto-detects user's template format)
-3. **search-notes-by-title/tag/content**: Search notes by various criteria
-4. **get-backlinks-by-title/id**: Find backlinks and forward links between notes
-5. **insert-link-in-note-by-title, create-bidirectional-link**: Insert links programmatically
-6. **list-all-tags, add-tag-to-note, remove-tag-from-note**: Tag management
-7. **attach-file-to-note, list-note-attachments, etc**: File attachment management
-8. **check-org-roam-setup, get-graph-stats, find-orphan-notes**: Utility functions
+2. **org-roam-skill-create-note**: Create new org-roam notes (auto-detects user's template format)
+3. **org-roam-skill-search-by-title/tag/content**: Search notes by various criteria
+4. **org-roam-skill-get-backlinks-by-title/id**: Find backlinks and forward links between notes
+5. **org-roam-skill-insert-link-in-note, org-roam-skill-create-bidirectional-link**: Insert links programmatically
+6. **org-roam-skill-list-all-tags, org-roam-skill-add-tag, org-roam-skill-remove-tag**: Tag management
+7. **org-roam-skill-attach-file, org-roam-skill-list-attachments, etc**: File attachment management
+8. **org-roam-skill-check-setup, org-roam-skill-get-graph-stats, org-roam-skill-find-orphan-notes**: Utility functions
 
 All functions auto-detect the user's org-roam configuration and require no customization.
 
@@ -435,12 +435,12 @@ When user says: "Create a note about React Hooks and link it to my React note"
 
 2. Create new note "React Hooks" with tags:
    ```bash
-   emacsclient --eval "(create-org-roam-note \"React Hooks\" '(\"javascript\" \"react\"))"
+   emacsclient --eval "(org-roam-skill-create-note \"React Hooks\" '(\"javascript\" \"react\"))"
    ```
 
 3. Insert bidirectional links between the notes:
    ```bash
-   emacsclient --eval "(create-bidirectional-link \"React Hooks\" \"React\")"
+   emacsclient --eval "(org-roam-skill-create-bidirectional-link \"React Hooks\" \"React\")"
    ```
 
 4. Show the user what was created and the file path
