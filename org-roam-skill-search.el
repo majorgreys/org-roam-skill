@@ -1,10 +1,22 @@
-;;; search-notes.el --- Search org-roam notes
+;;; org-roam-skill-search.el --- Search functions -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2025
+
+;; Author: Tahir Butt
+;; Keywords: outlines convenience
+
+;;; Commentary:
+;; Functions for searching org-roam notes by title, tag, and content.
+
+;;; Code:
 
 (require 'org-roam)
+(require 'seq)
 
-(defun search-notes-by-title (search-term)
+;;;###autoload
+(defun org-roam-skill-search-by-title (search-term)
   "Search org-roam notes by SEARCH-TERM in title.
-Returns a list of (id title file) tuples."
+Return a list of (id title file) tuples."
   (mapcar
    (lambda (node)
      (list (org-roam-node-id node)
@@ -16,9 +28,10 @@ Returns a list of (id title file) tuples."
                       (org-roam-node-title node)))
     (org-roam-node-list))))
 
-(defun search-notes-by-tag (tag)
+;;;###autoload
+(defun org-roam-skill-search-by-tag (tag)
   "Search org-roam notes by TAG.
-Returns a list of (id title file tags) tuples."
+Return a list of (id title file tags) tuples."
   (mapcar
    (lambda (node)
      (list (org-roam-node-id node)
@@ -30,9 +43,10 @@ Returns a list of (id title file tags) tuples."
       (member tag (org-roam-node-tags node)))
     (org-roam-node-list))))
 
-(defun search-notes-by-content (search-term)
+;;;###autoload
+(defun org-roam-skill-search-by-content (search-term)
   "Search org-roam notes by SEARCH-TERM in file content.
-Returns a list of (id title file) tuples for notes containing the term."
+Return a list of (id title file) tuples for notes containing the term."
   (let ((results '()))
     (dolist (node (org-roam-node-list))
       (let ((file (org-roam-node-file node)))
@@ -46,9 +60,10 @@ Returns a list of (id title file) tuples for notes containing the term."
                     results))))))
     (nreverse results)))
 
-(defun get-node-by-title (title)
+;;;###autoload
+(defun org-roam-skill-get-node-by-title (title)
   "Get org-roam node by exact TITLE or alias.
-Returns node details as a plist."
+Return node details as a plist."
   (let ((node (org-roam-node-from-title-or-alias title)))
     (when node
       (list :id (org-roam-node-id node)
@@ -58,5 +73,5 @@ Returns node details as a plist."
             :aliases (org-roam-node-aliases node)
             :refs (org-roam-node-refs node)))))
 
-(provide 'search-notes)
-;;; search-notes.el ends here
+(provide 'org-roam-skill-search)
+;;; org-roam-skill-search.el ends here

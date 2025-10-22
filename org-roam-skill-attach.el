@@ -1,37 +1,23 @@
-;;; attach-file.el --- Attach files to org-roam notes using org-attach
+;;; org-roam-skill-attach.el --- File attachment functions -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2025
+
+;; Author: Tahir Butt
+;; Keywords: outlines convenience
+
+;;; Commentary:
+;; Functions for attaching files to org-roam notes using org-attach.
+
+;;; Code:
 
 (require 'org-roam)
 (require 'org-attach)
+(require 'org-roam-skill-core)
 
-(defun org-roam-skill--with-node-context (title-or-id function)
-  "Execute FUNCTION with point at the node identified by TITLE-OR-ID.
-FUNCTION receives the node as an argument.
-Returns the result of FUNCTION."
-  (let* ((node (if (and (stringp title-or-id)
-                        (string-match-p "^[0-9a-f]\\{8\\}-" title-or-id))
-                   (org-roam-node-from-id title-or-id)
-                 (org-roam-node-from-title-or-alias title-or-id)))
-         (file (when node (org-roam-node-file node)))
-         (node-id (when node (org-roam-node-id node))))
-    (unless node
-      (error "Node not found: %s" title-or-id))
-    (unless (file-exists-p file)
-      (error "File not found: %s" file))
-
-    (with-current-buffer (find-file-noselect file)
-      (save-excursion
-        (goto-char (point-min))
-        ;; Search for the node's ID property
-        (if (re-search-forward (format ":ID:[ \t]+%s" (regexp-quote node-id)) nil t)
-            (progn
-              ;; Move to the beginning of the entry
-              (org-back-to-heading-or-point-min t)
-              (funcall function node))
-          (error "Could not locate node in file: %s" title-or-id))))))
-
-(defun attach-file-to-note (title-or-id file-path)
+;;;###autoload
+(defun org-roam-skill-attach-file (title-or-id file-path)
   "Attach FILE-PATH to the org-roam note identified by TITLE-OR-ID.
-Copies the file using org-attach. Returns the attachment directory path."
+Copy the file using org-attach.  Return the attachment directory path."
   (unless (file-exists-p file-path)
     (error "File does not exist: %s" file-path))
 
@@ -48,9 +34,10 @@ Copies the file using org-attach. Returns the attachment directory path."
              :full-path (expand-file-name filename attach-dir)
              :node-title (org-roam-node-title node))))))
 
-(defun list-note-attachments (title-or-id)
+;;;###autoload
+(defun org-roam-skill-list-attachments (title-or-id)
   "List all attachments for the org-roam note identified by TITLE-OR-ID.
-Returns a list of attachment info plists with :filename, :size, and :path."
+Return a list of attachment info plists with :filename, :size, and :path."
   (org-roam-skill--with-node-context
    title-or-id
    (lambda (node)
@@ -61,7 +48,8 @@ Returns a list of attachment info plists with :filename, :size, and :path."
               (let ((full-path (expand-file-name filename attach-dir)))
                 (list :filename filename
                       :path full-path
-                      :size (file-attribute-size (file-attributes full-path))
+                      :size (file-attribute-size
+                             (file-attributes full-path))
                       :modified (format-time-string
                                 "%Y-%m-%d %H:%M:%S"
                                 (file-attribute-modification-time
@@ -69,9 +57,10 @@ Returns a list of attachment info plists with :filename, :size, and :path."
             (org-attach-file-list attach-dir))
          nil)))))
 
-(defun delete-note-attachment (title-or-id filename)
+;;;###autoload
+(defun org-roam-skill-delete-attachment (title-or-id filename)
   "Delete the attachment FILENAME from the note identified by TITLE-OR-ID.
-Returns t on success, nil if attachment doesn't exist."
+Return t on success, nil if attachment doesn't exist."
   (org-roam-skill--with-node-context
    title-or-id
    (lambda (node)
@@ -83,9 +72,10 @@ Returns t on success, nil if attachment doesn't exist."
              t)
          (error "Attachment not found: %s" filename))))))
 
-(defun get-attachment-path (title-or-id filename)
-  "Get the full path to attachment FILENAME for note identified by TITLE-OR-ID.
-Returns the full path if the attachment exists, nil otherwise."
+;;;###autoload
+(defun org-roam-skill-get-attachment-path (title-or-id filename)
+  "Get the full path to attachment FILENAME for note TITLE-OR-ID.
+Return the full path if the attachment exists, nil otherwise."
   (org-roam-skill--with-node-context
    title-or-id
    (lambda (node)
@@ -95,13 +85,14 @@ Returns the full path if the attachment exists, nil otherwise."
        (when (and full-path (file-exists-p full-path))
          full-path)))))
 
-(defun get-note-attachment-dir (title-or-id)
+;;;###autoload
+(defun org-roam-skill-get-attachment-dir (title-or-id)
   "Get the attachment directory for the note identified by TITLE-OR-ID.
-Returns the directory path, or nil if no attachments exist."
+Return the directory path, or nil if no attachments exist."
   (org-roam-skill--with-node-context
    title-or-id
    (lambda (node)
      (org-attach-dir))))
 
-(provide 'attach-file)
-;;; attach-file.el ends here
+(provide 'org-roam-skill-attach)
+;;; org-roam-skill-attach.el ends here
