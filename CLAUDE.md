@@ -102,12 +102,29 @@ Returns `t` if OK, `nil` otherwise.
 **IMPORTANT**: All changes to this codebase must follow a branch-based workflow:
 
 1. **Create a feature branch** for your changes (never commit directly to `master`)
-2. **Make changes** and commit to the feature branch
+2. **Make changes** and commit to the feature branch with proper attribution
 3. **Push the branch** to the remote repository
 4. **Create a pull request** for review
 5. **Wait for PR approval** before merging to `master`
 
 This project requires PR approval before merging to the default branch.
+
+### Commit Attribution
+
+**OVERRIDE GLOBAL SETTING**: For this project, always include Claude as co-author in commit messages:
+
+```
+<conventional commit type>: <summary>
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+Example:
+```
+docs: clarify tags parameter must be list not string
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
 
 ## Function Reference
 
