@@ -97,6 +97,18 @@ emacsclient --eval "(org-roam-doctor-quick)"
 
 Returns `t` if OK, `nil` otherwise.
 
+## Git Workflow
+
+**IMPORTANT**: All changes to this codebase must follow a branch-based workflow:
+
+1. **Create a feature branch** for your changes (never commit directly to `master`)
+2. **Make changes** and commit to the feature branch
+3. **Push the branch** to the remote repository
+4. **Create a pull request** for review
+5. **Wait for PR approval** before merging to `master`
+
+This project requires PR approval before merging to the default branch.
+
 ## Function Reference
 
 See `SKILL.md` for complete function reference and usage examples. All functions use `org-roam-skill-` prefix except diagnostics (`org-roam-doctor*`).
