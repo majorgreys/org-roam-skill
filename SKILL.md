@@ -55,11 +55,13 @@ If not loaded, ask user to add to their Emacs config (see installation instructi
 
 **Most common operations** (all functions are already in memory with `org-roam-skill-` prefix):
 - Verify setup: `emacsclient --eval "(org-roam-doctor)"`
-- Create note: `emacsclient --eval "(org-roam-skill-create-note \"Title\" '(\"tag\") \"content\")"`
+- Create note: `emacsclient --eval "(org-roam-skill-create-note \"Title\" '(\"tag\") \"content\")"` (note: tags must be a list)
 - Search notes: `emacsclient --eval "(org-roam-skill-search-by-title \"search-term\")"`
 - Find backlinks: `emacsclient --eval "(org-roam-skill-get-backlinks-by-title \"Note Title\")"`
 - Add links: `emacsclient --eval "(org-roam-skill-create-bidirectional-link \"Note A\" \"Note B\")"`
 - Attach files: `emacsclient --eval "(org-roam-skill-attach-file \"Note Title\" \"/path/to/file\")"`
+
+**CRITICAL**: When calling `org-roam-skill-create-note`, the `tags` parameter MUST be a list like `'("tag1" "tag2")`, NOT a string like `"tag1"`.
 
 **Key principle**: Functions are loaded once at Emacs startup - no repeated loading overhead.
 
@@ -223,10 +225,24 @@ Use the `org-roam-skill-create-note` function (auto-detects user's template):
 emacsclient --eval "(org-roam-skill-create-note \"Note Title\" '(\"tag1\" \"tag2\") \"Optional content here\")"
 ```
 
+**Function signature**: `(org-roam-skill-create-note TITLE &optional TAGS CONTENT)`
+
+**Parameters:**
+- `TITLE` (string, required): The note title
+- `TAGS` (list of strings, optional): Tags as a quoted list like `'("tag1" "tag2")` - **NOT a single string**
+- `CONTENT` (string, optional): Initial content for the note
+
+**Common mistakes:**
+- ❌ Wrong: `"planning"` (string)
+- ✅ Correct: `'("planning")` (list with one element)
+- ❌ Wrong: `'planning` (unquoted symbol)
+- ✅ Correct: `'("tag1" "tag2")` (list with multiple elements)
+
 The function automatically:
 - Detects filename format from user's `org-roam-capture-templates`
 - Generates proper filenames (timestamp-only, timestamp-slug, or custom)
 - Handles head content to avoid #+title duplication
+- Sanitizes tags (replaces hyphens with underscores)
 - Returns the file path of the created note
 
 **Note**: Avoid using `org-roam-capture-` directly for programmatic note creation, as it's designed for interactive use.
