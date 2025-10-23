@@ -69,6 +69,69 @@
         (when (file-exists-p org-roam-directory)
           (delete-directory org-roam-directory t))))))
 
+;;; Content Formatting Tests
+
+(describe "org-roam-skill--detect-format"
+  (it "detects org headings"
+    (expect (org-roam-skill--detect-format "* Heading\n\nContent") :to-be 'org))
+
+  (it "detects org blocks"
+    (expect (org-roam-skill--detect-format "#+begin_src python\ncode\n#+end_src") :to-be 'org))
+
+  (it "detects org properties"
+    (expect (org-roam-skill--detect-format ":PROPERTIES:\n:ID: 123\n:END:") :to-be 'org))
+
+  (it "detects org italic emphasis"
+    (expect (org-roam-skill--detect-format "Some /italic/ text") :to-be 'org))
+
+  (it "defaults to markdown for plain text"
+    (expect (org-roam-skill--detect-format "Just plain text") :to-be 'markdown))
+
+  (it "defaults to markdown for markdown headings"
+    (expect (org-roam-skill--detect-format "# Markdown heading") :to-be 'markdown)))
+
+(describe "org-roam-skill--format-content"
+  (it "converts markdown headings to org headings"
+    (let ((input "# Heading 1\n\nSome text."))
+      (expect (org-roam-skill--format-content input) :to-match "\\* Heading 1")))
+
+  (it "converts markdown bold to org bold"
+    (let ((input "Some **bold** text."))
+      (expect (org-roam-skill--format-content input) :to-match "\\*bold\\*")))
+
+  (it "converts markdown italic to org italic"
+    (let ((input "Some *italic* text."))
+      (expect (org-roam-skill--format-content input) :to-match "/italic/")))
+
+  (it "converts markdown code blocks to org src blocks"
+    (let ((input "```python\ndef test():\n    pass\n```"))
+      (expect (org-roam-skill--format-content input) :to-match "#\\+begin_src python")
+      (expect (org-roam-skill--format-content input) :to-match "#\\+end_src")))
+
+  (it "normalizes org-mode content"
+    (let ((input "* Heading\n\nSome *bold* text."))
+      ;; Should detect org format and preserve heading structure
+      (expect (org-roam-skill--format-content input) :to-match "\\* Heading")
+      (expect (org-roam-skill--format-content input) :to-match "\\*bold\\*")))
+
+  (it "skips formatting when NO-FORMAT is t"
+    (let ((input "# Markdown heading"))
+      (expect (org-roam-skill--format-content input t) :to-equal input)))
+
+  (it "skips formatting when content starts with NO_FORMAT:"
+    (let ((input "NO_FORMAT:# Raw markdown"))
+      (expect (org-roam-skill--format-content input) :to-equal "# Raw markdown")))
+
+  (it "returns empty string for nil content"
+    (expect (org-roam-skill--format-content nil) :to-be nil))
+
+  (it "returns empty string for empty content"
+    (expect (org-roam-skill--format-content "") :to-equal ""))
+
+  (it "removes CUSTOM_ID properties added by pandoc"
+    (let ((input "# Test"))
+      (expect (org-roam-skill--format-content input) :not :to-match "CUSTOM_ID"))))
+
 ;;; Formatting Tests
 
 (describe "org-roam-skill--format-buffer"
