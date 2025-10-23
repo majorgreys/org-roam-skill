@@ -225,12 +225,13 @@ Use the `org-roam-skill-create-note` function (auto-detects user's template):
 emacsclient --eval "(org-roam-skill-create-note \"Note Title\" '(\"tag1\" \"tag2\") \"Optional content here\")"
 ```
 
-**Function signature**: `(org-roam-skill-create-note TITLE &optional TAGS CONTENT)`
+**Function signature**: `(org-roam-skill-create-note TITLE &optional TAGS CONTENT NO-FORMAT)`
 
 **Parameters:**
 - `TITLE` (string, required): The note title
 - `TAGS` (list of strings, optional): Tags as a quoted list like `'("tag1" "tag2")` - **NOT a single string**
 - `CONTENT` (string, optional): Initial content for the note
+- `NO-FORMAT` (boolean, optional): If `t`, skip content formatting
 
 **Common mistakes:**
 - ❌ Wrong: `"planning"` (string)
@@ -238,11 +239,47 @@ emacsclient --eval "(org-roam-skill-create-note \"Note Title\" '(\"tag1\" \"tag2
 - ❌ Wrong: `'planning` (unquoted symbol)
 - ✅ Correct: `'("tag1" "tag2")` (list with multiple elements)
 
+**Content Formatting (NEW):**
+
+By default, content is automatically formatted to org-mode syntax using pandoc with format auto-detection. This handles:
+- **Markdown → Org conversion** (`# Heading` → `* Heading`, `` ```code``` `` → `#+begin_src`)
+- **Org → Org normalization** (cleans up and validates org syntax, preserves `* Heading` structure)
+- **Plain text** → Passes through unchanged
+
+Format detection uses these heuristics:
+- Detects org: `* Heading`, `#+begin_src`, `:PROPERTIES:`, `/italic/`
+- Defaults to markdown: `# Heading`, plain text, or no clear signals
+
+**To disable formatting**, use either:
+1. Pass `t` as the `NO-FORMAT` parameter: `(org-roam-skill-create-note "Title" nil "content" t)`
+2. Prefix content with `NO_FORMAT:`: `(org-roam-skill-create-note "Title" nil "NO_FORMAT:raw content")`
+
+**Examples:**
+
+Markdown content (auto-converted):
+```bash
+emacsclient --eval "(org-roam-skill-create-note \"My Note\" '(\"project\") \"# Introduction\n\nSome **bold** text.\")"
+# Creates: * Introduction\n\nSome *bold* text.
+```
+
+Org content (normalized):
+```bash
+emacsclient --eval "(org-roam-skill-create-note \"My Note\" nil \"* Section\n\nContent here.\")"
+# Validates and cleans org syntax
+```
+
+Skip formatting:
+```bash
+emacsclient --eval "(org-roam-skill-create-note \"My Note\" nil \"Raw text\" t)"
+# Inserts exactly: Raw text
+```
+
 The function automatically:
 - Detects filename format from user's `org-roam-capture-templates`
 - Generates proper filenames (timestamp-only, timestamp-slug, or custom)
 - Handles head content to avoid #+title duplication
 - Sanitizes tags (replaces hyphens with underscores)
+- Formats content to org-mode (unless disabled)
 - Returns the file path of the created note
 
 **Note**: Avoid using `org-roam-capture-` directly for programmatic note creation, as it's designed for interactive use.

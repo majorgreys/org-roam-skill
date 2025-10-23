@@ -97,5 +97,72 @@ Return the head template string, or nil if not found."
       ;; Second argument of file+head is the head content
       (nth 2 target))))
 
+(defun org-roam-skill--detect-format (content)
+  "Detect if CONTENT is org-mode or markdown format.
+Returns 'org if org-mode syntax detected, 'markdown otherwise.
+Detection heuristics:
+- Org headings: lines starting with * followed by space
+- Org emphasis: /italic/ *bold* _underline_
+- Org blocks: #+begin_ #+end_
+- Otherwise assume markdown (safer default for mixed content)."
+  (cond
+   ;; Check for org headings at start of line
+   ((string-match-p "^\\* " content) 'org)
+   ;; Check for org blocks
+   ((string-match-p "^[ \t]*#\\+\\(begin\\|end\\)_" content) 'org)
+   ;; Check for org-style properties drawer
+   ((string-match-p "^[ \t]*:PROPERTIES:" content) 'org)
+   ;; Check for org-style emphasis with /italic/
+   ((string-match-p "/[^/\n]+/" content) 'org)
+   ;; Default to markdown (handles plain text well)
+   (t 'markdown)))
+
+(defun org-roam-skill--format-content (content &optional no-format)
+  "Format CONTENT to org-mode syntax using pandoc.
+Handles both markdown and org-mode input, normalizing to clean org format.
+If NO-FORMAT is non-nil or content starts with 'NO_FORMAT:', skip formatting.
+Returns formatted content or original if formatting fails/disabled."
+  (cond
+   ;; Skip formatting if explicitly disabled
+   ((or no-format
+        (and (stringp content)
+             (string-prefix-p "NO_FORMAT:" content)))
+    (if (string-prefix-p "NO_FORMAT:" content)
+        (substring content 10)  ; Strip the NO_FORMAT: prefix
+      content))
+
+   ;; Skip formatting if content is empty
+   ((or (not content) (string-empty-p content))
+    content)
+
+   ;; Format using pandoc
+   (t
+    (condition-case err
+        (with-temp-buffer
+          (insert content)
+          (let* ((detected-format (org-roam-skill--detect-format content))
+                 (input-format (symbol-name detected-format))
+                 (output-buffer (generate-new-buffer " *pandoc-output*"))
+                 (exit-code (call-process-region
+                            (point-min) (point-max)
+                            "pandoc"
+                            nil output-buffer nil
+                            "-f" input-format
+                            "-t" "org"
+                            "--wrap=none")))
+            (with-current-buffer output-buffer
+              (let ((result (buffer-string)))
+                (kill-buffer output-buffer)
+                ;; Check if pandoc succeeded
+                (if (and (= exit-code 0) (not (string-empty-p result)))
+                    ;; Remove CUSTOM_ID properties that pandoc adds
+                    (replace-regexp-in-string
+                     ":PROPERTIES:\n:CUSTOM_ID:.*\n:END:\n" ""
+                     result)
+                  ;; Return original content if pandoc failed
+                  content)))))
+      ;; If pandoc fails, return original content
+      (error content)))))
+
 (provide 'org-roam-skill-core)
 ;;; org-roam-skill-core.el ends here

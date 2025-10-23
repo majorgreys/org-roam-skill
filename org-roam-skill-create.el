@@ -15,15 +15,25 @@
 (require 'org-roam-skill-core)
 
 ;;;###autoload
-(defun org-roam-skill-create-note (title &optional tags content)
+(defun org-roam-skill-create-note (title &optional tags content no-format)
   "Create a new org-roam note with TITLE, optional TAGS and CONTENT.
 Automatically detect filename format and head content from capture templates.
 Work with any org-roam configuration - no customization required.
+
+CONTENT is automatically formatted to org-mode syntax using pandoc unless:
+- NO-FORMAT is non-nil, or
+- CONTENT starts with 'NO_FORMAT:' prefix
+
+This handles both markdown and org-mode input, normalizing to clean org format.
+
 Return the file path of the created note."
   (let* ((file-name (org-roam-skill--expand-filename title))
          (file-path (expand-file-name file-name org-roam-directory))
          (node-id (org-id-uuid))
-         (head-content (org-roam-skill--get-head-content)))
+         (head-content (org-roam-skill--get-head-content))
+         ;; Format content using pandoc (handles markdown/org input)
+         (formatted-content (when content
+                              (org-roam-skill--format-content content no-format))))
 
     ;; Create the file with proper org-roam structure
     (with-temp-file file-path
@@ -54,9 +64,11 @@ Return the file path of the created note."
       ;; Add blank line after frontmatter
       (insert "\n")
 
-      ;; Insert content if provided
-      (when content
-        (insert content "\n")))
+      ;; Insert formatted content if provided
+      (when formatted-content
+        (insert formatted-content)
+        (unless (string-suffix-p "\n" formatted-content)
+          (insert "\n"))))
 
     ;; Sync database to register the new note
     (org-roam-db-sync)
