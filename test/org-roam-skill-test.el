@@ -40,6 +40,38 @@
       (let ((filename (org-roam-skill--expand-filename "Test Note")))
         (expect filename :to-match "^[0-9]\\{14\\}-test_note\\.org$")))))
 
+;;; Time Format Expansion Tests
+
+(describe "org-roam-skill--expand-time-formats"
+  (it "expands custom time format %<...>"
+    (let ((result (org-roam-skill--expand-time-formats "Date: %<%Y-%m-%d>")))
+      (expect result :to-match "Date: [0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}")))
+
+  (it "expands %U inactive timestamp with time"
+    (let ((result (org-roam-skill--expand-time-formats "Created: %U")))
+      (expect result :to-match "Created: \\[[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\} [A-Z][a-z][a-z] [0-9]\\{2\\}:[0-9]\\{2\\}\\]")))
+
+  (it "expands %u inactive timestamp without time"
+    (let ((result (org-roam-skill--expand-time-formats "Date: %u")))
+      (expect result :to-match "Date: \\[[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\} [A-Z][a-z][a-z]\\]")))
+
+  (it "expands %T active timestamp with time"
+    (let ((result (org-roam-skill--expand-time-formats "Scheduled: %T")))
+      (expect result :to-match "Scheduled: <[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\} [A-Z][a-z][a-z] [0-9]\\{2\\}:[0-9]\\{2\\}>")))
+
+  (it "expands %t active timestamp without time"
+    (let ((result (org-roam-skill--expand-time-formats "Deadline: %t")))
+      (expect result :to-match "Deadline: <[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\} [A-Z][a-z][a-z]>")))
+
+  (it "expands multiple time formats in one string"
+    (let ((result (org-roam-skill--expand-time-formats "#+date: %<%Y-%m-%d>\n#+created: %U")))
+      (expect result :to-match "^#\\+date: [0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}")
+      (expect result :to-match "#\\+created: \\[[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}")))
+
+  (it "leaves text without time formats unchanged"
+    (let ((result (org-roam-skill--expand-time-formats "Just plain text")))
+      (expect result :to-equal "Just plain text"))))
+
 ;;; Doctor Functions Tests
 
 (describe "org-roam-doctor-quick"
