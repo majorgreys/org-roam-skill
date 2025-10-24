@@ -97,6 +97,51 @@ Return the head template string, or nil if not found."
       ;; Second argument of file+head is the head content
       (nth 2 target))))
 
+(defun org-roam-skill--expand-time-formats (template-string)
+  "Expand time format specifiers in TEMPLATE-STRING.
+Handles:
+- %<format> - custom time format (e.g., %<%Y-%m-%d>)
+- %U - inactive timestamp with time [2025-10-23 Thu 15:53]
+- %u - inactive timestamp without time [2025-10-23 Thu]
+- %T - active timestamp with time <2025-10-23 Thu 15:53>
+- %t - active timestamp without time <2025-10-23 Thu>
+
+Returns the expanded string with all time formats replaced."
+  (let ((result template-string)
+        (case-fold-search nil))  ; Make regex matching case-sensitive
+    ;; Expand %<...> custom time formats
+    (while (string-match "%<\\([^>]+\\)>" result)
+      (let ((time-format (match-string 1 result)))
+        (setq result (replace-match
+                     (format-time-string time-format)
+                     t t result))))
+
+    ;; Expand %U - inactive timestamp with time (order matters: do %U before %u)
+    (setq result (replace-regexp-in-string
+                 "%U"
+                 (format-time-string "[%Y-%m-%d %a %H:%M]")
+                 result t t))
+
+    ;; Expand %u - inactive timestamp without time
+    (setq result (replace-regexp-in-string
+                 "%u"
+                 (format-time-string "[%Y-%m-%d %a]")
+                 result t t))
+
+    ;; Expand %T - active timestamp with time (order matters: do %T before %t)
+    (setq result (replace-regexp-in-string
+                 "%T"
+                 (format-time-string "<%Y-%m-%d %a %H:%M>")
+                 result t t))
+
+    ;; Expand %t - active timestamp without time
+    (setq result (replace-regexp-in-string
+                 "%t"
+                 (format-time-string "<%Y-%m-%d %a>")
+                 result t t))
+
+    result))
+
 (defun org-roam-skill--detect-format (content)
   "Detect if CONTENT is org-mode or markdown format.
 Returns 'org if org-mode syntax detected, 'markdown otherwise.

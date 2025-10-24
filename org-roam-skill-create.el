@@ -44,8 +44,11 @@ Return the file path of the created note."
 
       ;; Insert head content if template specifies it
       (when (and head-content (not (string-empty-p head-content)))
-        (let ((expanded-head
-               (replace-regexp-in-string "\\${title}" title head-content)))
+        (let* ((expanded-head
+                ;; First expand ${title}
+                (replace-regexp-in-string "\\${title}" title head-content))
+               ;; Then expand time format specifiers
+               (expanded-head (org-roam-skill--expand-time-formats expanded-head)))
           (insert expanded-head)
           (unless (string-suffix-p "\n" expanded-head)
             (insert "\n"))))
