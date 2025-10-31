@@ -68,16 +68,16 @@ Return t if successful, nil otherwise."
       (with-current-buffer (find-file-noselect file)
         (save-excursion
           (goto-char (point-min))
-          (if (re-search-forward "^#\\+filetags:" nil t)
+          (if (re-search-forward "^#\\+\\(?:filetags\\|FILETAGS\\):" nil t)
               ;; Tags line exists, append tag
               (progn
                 (end-of-line)
                 (unless (looking-back (concat ":" sanitized-tag ":") nil)
                   (insert ":" sanitized-tag ":")))
             ;; No tags line, create it
-            (when (re-search-forward "^#\\+title:" nil t)
+            (when (re-search-forward "^#\\+\\(?:title\\|TITLE\\):" nil t)
               (forward-line 1)
-              (insert "#+filetags: :" sanitized-tag ":\n")))
+              (insert "#+FILETAGS: :" sanitized-tag ":\n")))
           (save-buffer)
           (org-roam-db-sync)
           t)))))
@@ -94,7 +94,7 @@ Return t if successful, nil otherwise."
       (with-current-buffer (find-file-noselect file)
         (save-excursion
           (goto-char (point-min))
-          (when (re-search-forward "^#\\+filetags:" nil t)
+          (when (re-search-forward "^#\\+\\(?:filetags\\|FILETAGS\\):" nil t)
             (let ((line-start (line-beginning-position))
                   (line-end (line-end-position)))
               (goto-char line-start)

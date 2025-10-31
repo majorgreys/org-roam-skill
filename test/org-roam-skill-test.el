@@ -180,6 +180,96 @@
       (let ((output (substring-no-properties (buffer-string))))
         (expect output :to-equal "| Name     | Value    |\n| Foo      | Bar      |\n| LongName | ShortVal |\n")))))
 
+(describe "org-roam-skill--validate-org-syntax"
+  (it "validates proper org syntax"
+    (let ((test-file (make-temp-file "org-roam-test-" nil ".org")))
+      (unwind-protect
+          (progn
+            (with-temp-file test-file
+              (insert ":PROPERTIES:\n")
+              (insert ":ID:       test-id\n")
+              (insert ":END:\n")
+              (insert "#+TITLE: Test Note\n")
+              (insert "#+FILETAGS: :test:\n"))
+            (let ((result (org-roam-skill--validate-org-syntax test-file)))
+              (expect (plist-get result :valid) :to-be t)
+              (expect (plist-get result :errors) :to-equal nil)))
+        (when (file-exists-p test-file)
+          (delete-file test-file)))))
+
+  (it "detects lowercase keywords"
+    (let ((test-file (make-temp-file "org-roam-test-" nil ".org")))
+      (unwind-protect
+          (progn
+            (with-temp-file test-file
+              (insert ":PROPERTIES:\n")
+              (insert ":ID:       test-id\n")
+              (insert ":END:\n")
+              (insert "#+title: Test Note\n"))
+            (let ((result (org-roam-skill--validate-org-syntax test-file)))
+              (expect (plist-get result :valid) :to-be nil)
+              (expect (length (plist-get result :errors)) :to-be-greater-than 0)))
+        (when (file-exists-p test-file)
+          (delete-file test-file)))))
+
+  (it "detects blank lines in PROPERTIES drawer"
+    (let ((test-file (make-temp-file "org-roam-test-" nil ".org")))
+      (unwind-protect
+          (progn
+            (with-temp-file test-file
+              (insert ":PROPERTIES:\n")
+              (insert ":ID:       test-id\n")
+              (insert "\n")  ;; Blank line - should be detected
+              (insert ":END:\n")
+              (insert "#+TITLE: Test Note\n"))
+            (let ((result (org-roam-skill--validate-org-syntax test-file)))
+              (expect (plist-get result :valid) :to-be nil)
+              (expect (car (plist-get result :errors)) :to-match "PROPERTIES drawer contains blank lines")))
+        (when (file-exists-p test-file)
+          (delete-file test-file)))))
+
+  (it "detects headings without space after asterisks"
+    (let ((test-file (make-temp-file "org-roam-test-" nil ".org")))
+      (unwind-protect
+          (progn
+            (with-temp-file test-file
+              (insert ":PROPERTIES:\n")
+              (insert ":ID:       test-id\n")
+              (insert ":END:\n")
+              (insert "#+TITLE: Test Note\n")
+              (insert "*Heading without space\n"))
+            (let ((result (org-roam-skill--validate-org-syntax test-file)))
+              (expect (plist-get result :valid) :to-be nil)
+              (expect (car (plist-get result :errors)) :to-match "missing space after asterisks")))
+        (when (file-exists-p test-file)
+          (delete-file test-file))))))
+
+(describe "org-roam-skill-create-note"
+  (it "creates notes with uppercase keywords"
+    (let* ((org-roam-directory (make-temp-file "org-roam-test-" t))
+           (org-roam-db-location (expand-file-name "org-roam.db" org-roam-directory))
+           (org-roam-capture-templates
+            '(("d" "default" plain "%?"
+               :target (file+head "%<%Y%m%d%H%M%S>.org" "#+TITLE: ${title}")
+               :unnarrowed t))))
+      (unwind-protect
+          (progn
+            (org-roam-db-sync)
+            (let ((file-path (org-roam-skill-create-note "Test Note" '("test" "example") "Test content")))
+              (expect (file-exists-p file-path) :to-be t)
+              (with-temp-buffer
+                (insert-file-contents file-path)
+                (let ((content (buffer-string)))
+                  ;; Verify uppercase keywords are present
+                  (expect (string-match-p "TITLE" content) :to-be-truthy)
+                  (expect (string-match-p "FILETAGS" content) :to-be-truthy)
+                  ;; Verify proper PROPERTIES drawer
+                  (expect (string-match-p "PROPERTIES" content) :to-be-truthy)
+                  (expect (string-match-p ":ID:" content) :to-be-truthy)
+                  (expect (string-match-p ":END:" content) :to-be-truthy)))))
+        (when (file-exists-p org-roam-directory)
+          (delete-directory org-roam-directory t))))))
+
 (describe "format-org-roam-note"
   (it "formats an org-roam note file with aligned table pipes"
     (let* ((org-roam-directory (make-temp-file "org-roam-test-" t))
@@ -193,7 +283,7 @@
               (insert ":PROPERTIES:\n")
               (insert (format ":ID:       %s\n" test-id))
               (insert ":END:\n")
-              (insert "#+title: Test Note\n\n")
+              (insert "#+TITLE: Test Note\n\n")
               (insert "| Name | Value |\n")
               (insert "| Foo | Bar |\n")
               (insert "| LongName | ShortVal |\n"))

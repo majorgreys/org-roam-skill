@@ -54,14 +54,14 @@ Return the file path of the created note."
             (insert "\n"))))
 
       ;; If head content doesn't include title, add it
-      (unless (string-match-p "#\\+title:" (or head-content ""))
-        (insert (format "#+title: %s\n" title)))
+      (unless (string-match-p "#\\+\\(?:title\\|TITLE\\):" (or head-content ""))
+        (insert (format "#+TITLE: %s\n" title)))
 
       ;; Insert filetags if provided (sanitize to remove hyphens)
       (when tags
         (let ((sanitized-tags
                (mapcar #'org-roam-skill--sanitize-tag tags)))
-          (insert (format "#+filetags: :%s:\n"
+          (insert (format "#+FILETAGS: :%s:\n"
                           (mapconcat (lambda (tag) tag) sanitized-tags ":")))))
 
       ;; Add blank line after frontmatter
