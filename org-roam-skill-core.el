@@ -17,6 +17,72 @@
 Org tags cannot contain hyphens."
   (replace-regexp-in-string "-" "_" tag))
 
+(defun org-roam-skill--with-temp-content-file (content function)
+  "Execute FUNCTION with CONTENT in a temporary file.
+FUNCTION receives the temporary file path as its argument.
+The temporary file is automatically cleaned up after execution.
+Returns the result of calling FUNCTION."
+  (let ((temp-file (make-temp-file "org-roam-skill-" nil ".org")))
+    (unwind-protect
+        (progn
+          (with-temp-file temp-file
+            (insert content))
+          (funcall function temp-file))
+      ;; Cleanup: delete temp file
+      (when (file-exists-p temp-file)
+        (delete-file temp-file)))))
+
+(defun org-roam-skill--validate-org-syntax (file-path)
+  "Validate org-mode syntax in FILE-PATH.
+Returns a plist with validation results:
+  :valid - t if all checks pass, nil otherwise
+  :errors - list of error messages
+Checks include:
+  - PROPERTIES drawer structure (no blank lines within)
+  - Proper keyword casing (uppercase keywords)
+  - Heading format (asterisks followed by space)
+  - FILETAGS format"
+  (let ((errors '())
+        (valid t))
+    (with-temp-buffer
+      (insert-file-contents file-path)
+      (goto-char (point-min))
+
+      ;; Check PROPERTIES drawer structure
+      (while (re-search-forward "^[ \t]*:PROPERTIES:" nil t)
+        (let ((drawer-start (point))
+              (drawer-end (save-excursion
+                           (when (re-search-forward "^[ \t]*:END:" nil t)
+                             (point)))))
+          (when drawer-end
+            ;; Check for blank lines within drawer
+            (save-excursion
+              (goto-char drawer-start)
+              (when (re-search-forward "^[ \t]*$" drawer-end t)
+                (push "PROPERTIES drawer contains blank lines" errors)
+                (setq valid nil))))))
+
+      ;; Check for lowercase keywords that should be uppercase
+      ;; Match only lowercase keywords (not UPPERCASE or Mixed)
+      (goto-char (point-min))
+      (while (re-search-forward "^[ \t]*#\\+\\([a-z]+\\):" nil t)
+        (let ((keyword (match-string 1)))
+          (when (member keyword '("title" "filetags" "date" "author"))
+            (push (format "Found lowercase keyword '#+%s:' - should be uppercase" keyword)
+                  errors)
+            (setq valid nil))))
+
+      ;; Check heading format (asterisks must be followed by space)
+      ;; Only match actual org headings (not #+keywords)
+      (goto-char (point-min))
+      (while (re-search-forward "^\\(\\*+\\)\\([^ \t\n*]\\)" nil t)
+        (push (format "Heading at line %d missing space after asterisks"
+                      (line-number-at-pos))
+              errors)
+        (setq valid nil)))
+
+    (list :valid valid :errors (nreverse errors))))
+
 (defun org-roam-skill--with-node-context (title-or-id function)
   "Execute FUNCTION with point at the node identified by TITLE-OR-ID.
 FUNCTION receives the node as an argument.
@@ -166,7 +232,8 @@ Detection heuristics:
   "Format CONTENT to org-mode syntax using pandoc.
 Handles both markdown and org-mode input, normalizing to clean org format.
 If NO-FORMAT is non-nil or content starts with 'NO_FORMAT:', skip formatting.
-Returns formatted content or original if formatting fails/disabled."
+Returns formatted content or original if formatting fails/disabled.
+Uses temporary files for safer handling of special characters."
   (cond
    ;; Skip formatting if explicitly disabled
    ((or no-format
@@ -180,32 +247,39 @@ Returns formatted content or original if formatting fails/disabled."
    ((or (not content) (string-empty-p content))
     content)
 
-   ;; Format using pandoc
+   ;; Format using pandoc with temp files
    (t
     (condition-case err
-        (with-temp-buffer
-          (insert content)
-          (let* ((detected-format (org-roam-skill--detect-format content))
-                 (input-format (symbol-name detected-format))
-                 (output-buffer (generate-new-buffer " *pandoc-output*"))
-                 (exit-code (call-process-region
-                            (point-min) (point-max)
-                            "pandoc"
-                            nil output-buffer nil
-                            "-f" input-format
-                            "-t" "org"
-                            "--wrap=none")))
-            (with-current-buffer output-buffer
-              (let ((result (buffer-string)))
-                (kill-buffer output-buffer)
-                ;; Check if pandoc succeeded
-                (if (and (= exit-code 0) (not (string-empty-p result)))
-                    ;; Remove CUSTOM_ID properties that pandoc adds
-                    (replace-regexp-in-string
-                     ":PROPERTIES:\n:CUSTOM_ID:.*\n:END:\n" ""
-                     result)
-                  ;; Return original content if pandoc failed
-                  content)))))
+        (org-roam-skill--with-temp-content-file
+         content
+         (lambda (input-file)
+           (let* ((detected-format (org-roam-skill--detect-format content))
+                  (input-format (symbol-name detected-format))
+                  (output-file (make-temp-file "org-roam-skill-output-" nil ".org"))
+                  (exit-code (call-process
+                             "pandoc"
+                             nil nil nil
+                             "-f" input-format
+                             "-t" "org"
+                             "--wrap=none"
+                             "-o" output-file
+                             input-file)))
+             (unwind-protect
+                 (if (and (= exit-code 0) (file-exists-p output-file))
+                     (with-temp-buffer
+                       (insert-file-contents output-file)
+                       (let ((result (buffer-string)))
+                         ;; Remove CUSTOM_ID properties that pandoc adds
+                         (if (not (string-empty-p result))
+                             (replace-regexp-in-string
+                              ":PROPERTIES:\n:CUSTOM_ID:.*\n:END:\n" ""
+                              result)
+                           content)))
+                   ;; Return original content if pandoc failed
+                   content)
+               ;; Cleanup output file
+               (when (file-exists-p output-file)
+                 (delete-file output-file))))))
       ;; If pandoc fails, return original content
       (error content)))))
 
